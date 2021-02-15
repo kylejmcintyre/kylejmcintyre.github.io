@@ -1,3 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Virtual Placidity - Kyle McIntyre</title><link href="https://kylejmcintyre.github.io/" rel="alternate"></link><link href="https://kylejmcintyre.github.io/feeds/kyle-mcintyre.atom.xml" rel="self"></link><id>https://kylejmcintyre.github.io/</id><updated>2021-02-12T10:20:00-07:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>Using the Avro Serde on Amazon Athena</title><link href="https://kylejmcintyre.github.io/using-the-avro-serde-on-amazon-athena.html" rel="alternate"></link><published>2021-02-12T10:20:00-07:00</published><updated>2021-02-12T10:20:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylejmcintyre.github.io,2021-02-12:/using-the-avro-serde-on-amazon-athena.html</id><content type="html">&lt;p&gt;I'm currently focusing on building a minimalist yet effective data pipeline for training ML models
-on the data we've accumulated at Quiq. &lt;/p&gt;</content><category term="Software Engineering"></category><category term="athena"></category><category term="avro"></category></entry></feed>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Kyle McIntyre - Kyle McIntyre</title><link href="https://kylejmcintyre.github.io/" rel="alternate"></link><link href="https://kylejmcintyre.github.io/feeds/kyle-mcintyre.atom.xml" rel="self"></link><id>https://kylejmcintyre.github.io/</id><updated>2021-02-12T10:20:00-07:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>Using Athena to convert individual JSON objects to Avro files</title><link href="https://kylejmcintyre.github.io/using-athena-to-convert-individual-json-objects-to-avro-files.html" rel="alternate"></link><published>2021-02-12T10:20:00-07:00</published><updated>2021-02-12T10:20:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylejmcintyre.github.io,2021-02-12:/using-athena-to-convert-individual-json-objects-to-avro-files.html</id><summary type="html">&lt;p&gt;Back in September of 2019, AWS added support to Athena to enable Create Table as Select (CTAS) statements,
+as well as INSERT INTO statements. These statements allow the the results of a query to be used
+to construct a new table (CTAS) or appended to another table (INSERT INTO). This …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Back in September of 2019, AWS added support to Athena to enable Create Table as Select (CTAS) statements,
+as well as INSERT INTO statements. These statements allow the the results of a query to be used
+to construct a new table (CTAS) or appended to another table (INSERT INTO). This was a big step forward for
+Athena because having this support enables it to fulfill some ETL needs. A primary use case is to convert the format
+of data that underlies an Athena table.&lt;/p&gt;
+&lt;p&gt;It's certainly not unusual for apps to produce individual JSON records and store them as objects in S3. And
+with Athena, you can define a lazy schema that enables Presto (under the hood of Athena) to do some nice
+distributed queries against them (asynchronously). However, a bunch of individual objects result in poorer
+query performance as a dataset gets larger. So it's recommended to convert your data into a 'big data' file
+format such as ORC, Parquet or Avro. Each of these formats have tradeoffs, but Avro is definitely the
+outlier of the three under discussion. ORC and Parquet are columnar formats, whereas Avro is row-based. That
+makes the structure of Avro more akin to a relational database table or spreadsheet, albeit very nicely 
+compressed and with its schema declared in the file header. Roughly speaking, the columnar formats are what
+you want to use if you're planning to do lots of 'analytical' queries involving a few columns, such as sums 
+and averages grouped by certain columns. However, if you're planning to essentially select a bunch of full rows
+back out of your big data files, Avro is arguably a better fit since reconstructing full rows out of columnar
+formats can involve a lot of jumping around, especially if your data is rather wide. In a recent use case I needed
+to support fetching a lot of full rows of fairly wide data, so I endeavored to get Athena to do a conversion from JSON to Avro for me. 
+In the end it all worked great and I very much enjoyed the serverless and mostly "codeless" approach. However,
+I did hit one snag worth sharing with the world.&lt;/p&gt;
+&lt;p&gt;To set the stage, consider the following Athena table declarations, which are actually Hive DDL:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;CREATE&lt;/span&gt; &lt;span class="k"&gt;EXTERNAL&lt;/span&gt; &lt;span class="k"&gt;TABLE&lt;/span&gt; &lt;span class="k"&gt;IF&lt;/span&gt; &lt;span class="k"&gt;NOT&lt;/span&gt; &lt;span class="k"&gt;EXISTS&lt;/span&gt; &lt;span class="n"&gt;activity_json_staging&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+  &lt;span class="n"&gt;activityId&lt;/span&gt; &lt;span class="n"&gt;STRING&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="n"&gt;startTime&lt;/span&gt; &lt;span class="k"&gt;TIMESTAMP&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="n"&gt;endTime&lt;/span&gt; &lt;span class="k"&gt;TIMESTAMP&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="n"&gt;contactState&lt;/span&gt; &lt;span class="n"&gt;STRUCT&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;raw&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;STRING&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="n"&gt;creationDate&lt;/span&gt; &lt;span class="nb"&gt;DATE&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt; 
+&lt;span class="k"&gt;ROW&lt;/span&gt; &lt;span class="n"&gt;FORMAT&lt;/span&gt; &lt;span class="n"&gt;serde&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;org.apache.hive.hcatalog.data.JsonSerDe&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;LOCATION&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;s3://foo-bucket/activity-json-staging&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;CREATE&lt;/span&gt; &lt;span class="k"&gt;EXTERNAL&lt;/span&gt; &lt;span class="k"&gt;TABLE&lt;/span&gt; &lt;span class="k"&gt;IF&lt;/span&gt; &lt;span class="k"&gt;NOT&lt;/span&gt; &lt;span class="k"&gt;EXISTS&lt;/span&gt; &lt;span class="n"&gt;activity_avro_base&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+  &lt;span class="n"&gt;activityId&lt;/span&gt; &lt;span class="n"&gt;STRING&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="n"&gt;startTime&lt;/span&gt; &lt;span class="k"&gt;TIMESTAMP&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="n"&gt;endTime&lt;/span&gt; &lt;span class="k"&gt;TIMESTAMP&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="n"&gt;contactState&lt;/span&gt; &lt;span class="n"&gt;STRUCT&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;raw&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;STRING&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt; 
+&lt;span class="n"&gt;PARTITIONED&lt;/span&gt; &lt;span class="k"&gt;BY&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;creationDate&lt;/span&gt; &lt;span class="nb"&gt;DATE&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+&lt;span class="k"&gt;ROW&lt;/span&gt; &lt;span class="n"&gt;FORMAT&lt;/span&gt; &lt;span class="n"&gt;serde&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;org.apache.hadoop.hive.serde2.avro.AvroSerDe&amp;#39;&lt;/span&gt; &lt;span class="k"&gt;WITH&lt;/span&gt; &lt;span class="n"&gt;SERDEPROPERTIES&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;avro.schema.literal&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;{&lt;/span&gt;
+&lt;span class="s1"&gt;  &amp;quot;type&amp;quot; : &amp;quot;record&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;  &amp;quot;name&amp;quot; : &amp;quot;ContactActivityRecord&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;  &amp;quot;namespace&amp;quot; : &amp;quot;default&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;  &amp;quot;fields&amp;quot; : [ {&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;name&amp;quot; : &amp;quot;activityId&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;type&amp;quot; : [ &amp;quot;null&amp;quot;, &amp;quot;string&amp;quot; ],&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;default&amp;quot; : null&lt;/span&gt;
+&lt;span class="s1"&gt;  }, {&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;name&amp;quot; : &amp;quot;startTime&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;type&amp;quot; : [ &amp;quot;null&amp;quot;, &amp;quot;long&amp;quot; ],&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;default&amp;quot; : null&lt;/span&gt;
+&lt;span class="s1"&gt;  }, {&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;name&amp;quot; : &amp;quot;endTime&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;type&amp;quot; : [ &amp;quot;null&amp;quot;, &amp;quot;long&amp;quot; ],&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;default&amp;quot; : null&lt;/span&gt;
+&lt;span class="s1"&gt;  }, {&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;name&amp;quot; : &amp;quot;contactState&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;    &amp;quot;type&amp;quot; : {&lt;/span&gt;
+&lt;span class="s1"&gt;      &amp;quot;type&amp;quot; : &amp;quot;record&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;      &amp;quot;name&amp;quot; : &amp;quot;Contact&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;      &amp;quot;namespace&amp;quot; : &amp;quot;default&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;      &amp;quot;fields&amp;quot; : [ {&lt;/span&gt;
+&lt;span class="s1"&gt;        &amp;quot;name&amp;quot; : &amp;quot;raw&amp;quot;,&lt;/span&gt;
+&lt;span class="s1"&gt;        &amp;quot;type&amp;quot; : [ &amp;quot;null&amp;quot;, &amp;quot;string&amp;quot; ],&lt;/span&gt;
+&lt;span class="s1"&gt;        &amp;quot;default&amp;quot; : null&lt;/span&gt;
+&lt;span class="s1"&gt;      } ]&lt;/span&gt;
+&lt;span class="s1"&gt;    }&lt;/span&gt;
+&lt;span class="s1"&gt;  } ]&lt;/span&gt;
+&lt;span class="s1"&gt;}&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;STORED&lt;/span&gt; &lt;span class="k"&gt;AS&lt;/span&gt; &lt;span class="n"&gt;AVRO&lt;/span&gt;
+&lt;span class="k"&gt;LOCATION&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;s3://foo-bucket/activity-avro-base&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The first table is a JSON-backed table, while the second is Avro-backed. This is determined by the serde declaration. With Avro, you're expected to provide
+an Avro schema declaration and pass it in as a literal via SERDEPROPERTIES. This is kind of annoying since it feels like you're just repeating the Hive schema in another dialect. 
+An important exception to that statement is that you don't declare avro schema for any fields that are part of the table's partition declaration. 
+In the end I created a POJO-like data structure for declaring what an Athena table looks like, and generated the Hive DDL and Avro schema from that. &lt;/p&gt;
+&lt;p&gt;So the general idea is to use an INSERT INTO statement to take the individual JSON records underlying the activity_json_staging table and move them 
+into activity_avro_base. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;INSERT&lt;/span&gt; &lt;span class="k"&gt;INTO&lt;/span&gt; &lt;span class="n"&gt;activity_json_staging&lt;/span&gt; &lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;activity_avro_base&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;As a byproduct of them being moved, their format will be changed, they'll be batched and they'll be partitioned because
+the second table has a partition declared. Pretty slick, right?  However, upon testing the data transfer, I was confronted with a 
+runtime error that provided essentially zero guidance and for which I couldn't find any relevant resources on the internet!&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;HIVE_WRITER_DATA_ERROR&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;HIVE_WRITER_DATA_ERROR&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="n"&gt;If&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="n"&gt;manifest&lt;/span&gt; &lt;span class="n"&gt;file&lt;/span&gt; &lt;span class="n"&gt;was&lt;/span&gt; &lt;span class="n"&gt;generated&lt;/span&gt; &lt;span class="n"&gt;at&lt;/span&gt; 
+&lt;span class="s1"&gt;&amp;#39;s3://foo-bucket/query-results/e52567d6-b56f-4fde-8514-8887d6f58f22-manifest.csv&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; 
+&lt;span class="n"&gt;you&lt;/span&gt; &lt;span class="n"&gt;may&lt;/span&gt; &lt;span class="n"&gt;need&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;manually&lt;/span&gt; &lt;span class="n"&gt;clean&lt;/span&gt; &lt;span class="n"&gt;the&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="n"&gt;from&lt;/span&gt; &lt;span class="n"&gt;locations&lt;/span&gt; &lt;span class="n"&gt;specified&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;the&lt;/span&gt; &lt;span class="n"&gt;manifest&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt; 
+&lt;span class="n"&gt;Athena&lt;/span&gt; &lt;span class="n"&gt;will&lt;/span&gt; &lt;span class="n"&gt;not&lt;/span&gt; &lt;span class="n"&gt;delete&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;your&lt;/span&gt; &lt;span class="n"&gt;account&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And...that was it. I scoured the API results, CLI output and the AWS UI for more information but couldn't find any. And all Google turned up was the &lt;a href="https://github.com/prestodb/presto/blob/master/presto-hive/src/main/java/com/facebook/presto/hive/RecordFileWriter.java"&gt;Presto source code&lt;/a&gt; that presumably emits it. 
+So, it was one of those memorable experiences where you basically binary search your schema/input for the problem until you pinpoint it. In the end,
+the problem was that one of my JSON records had the value &lt;code&gt;null&lt;/code&gt; for contactState. The Hive DDL was fine with this, but the Avro schema was not. The fix was to 
+change the Avro declaration for the contactState field as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;  &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;contactState&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;type&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[{&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;quot;type&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;record&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Contact&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;quot;namespace&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;default&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;quot;fields&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;raw&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nt"&gt;&amp;quot;type&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;null&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;],&lt;/span&gt;
+        &lt;span class="nt"&gt;&amp;quot;default&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;
+      &lt;span class="p"&gt;}]&lt;/span&gt;
+    &lt;span class="p"&gt;},&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;null&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that its type property is now an array and includes a string value of "null". Yep, that was it. Silly me! Things have been working great since then but I have lingering concerns about receiving such 
+minimal diagnostic info on what seems like a pretty common mistake. Anyway, sharing it here in hopes it helps someone else. You may be wondering why I'm doing this in Athena instead of explicitly in Glue,
+and I guess the answer is to limit my cloud-specific dependencies. &lt;/p&gt;</content><category term="Software Engineering"></category><category term="athena"></category><category term="avro"></category></entry></feed>

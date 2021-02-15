@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>  Using Athena to convert individual JSON objects to Avro files | Kyle McIntyre
+</title>
+  <link rel="canonical" href="https://kylejmcintyre.github.io/using-athena-to-convert-individual-json-objects-to-avro-files.html">
+
+
+  <link rel="stylesheet" href="https://kylejmcintyre.github.io/styles/bootstrap.css">
+  <link rel="stylesheet" href="https://kylejmcintyre.github.io/theme/css/fontawesome.min.css">
+  <link rel="stylesheet" href="https://kylejmcintyre.github.io/theme/css/pygments/default.min.css">
+  <link rel="stylesheet" href="https://kylejmcintyre.github.io/theme/css/theme.css">
+
+  <link rel="alternate" type="application/atom+xml" title="Full Atom Feed"
+        href="https://kylejmcintyre.github.io/feeds/all.atom.xml">
+  <link rel="alternate" type="application/atom+xml" title="Categories Atom Feed"
+        href="https://kylejmcintyre.github.io/feeds/software-engineering.atom.xml">  
+  <meta name="description" content="Back in September of 2019, AWS added support to Athena to enable Create Table as Select (CTAS) statements, as well as INSERT INTO statements. These statements allow the the results of a query to be used to construct a new table (CTAS) or appended to another table (INSERT INTO). This …">
+
+
+</head>
+
+<body>
+  <header class="header">
+    <div class="container">
+<div class="row">
+    <div class="col-sm-4">
+      <a href="https://kylejmcintyre.github.io/">
+        <img class="img-fluid rounded" src=https://kylejmcintyre.github.io/images/profile.png alt="Kyle McIntyre">
+      </a>
+    </div>
+  <div class="col-sm-8">
+    <h1 class="title"><a href="https://kylejmcintyre.github.io/">Kyle McIntyre</a></h1>
+      <p class="text-muted">Software engineering, data science, hobby farming and other pursuits</p>
+      <ul class="list-inline">
+            <li class="list-inline-item"><a href="https://kylejmcintyre.github.io/pages/about.html">About</a></li>
+            <li class="list-inline-item"><a href="https://kylejmcintyre.github.io/pages/resume.html">Resume</a></li>
+            <li class=" list-inline-item text-muted">|</li>
+          <li class="list-inline-item"><a class="fab fa-github" href="https://github.com/kylejmcintyre" target="_blank"></a></li>
+          <li class="list-inline-item"><a class="fab fa-linkedin" href="https://linkedin.com/in/kylejmcintyre" target="_blank"></a></li>
+      </ul>
+  </div>
+</div>    </div>
+  </header>
+
+  <div class="main">
+    <div class="container">
+      <h1>  Using Athena to convert individual JSON objects to Avro files
+</h1>
+      <hr>
+  <article class="article">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2021-02-12T10:20:00-07:00">
+          <i class="fas fa-clock"></i>
+          Fri 12 February 2021
+        </li>
+        <li class="list-inline-item">
+          <i class="fas fa-folder-open"></i>
+          <a href="https://kylejmcintyre.github.io/category/software-engineering.html">Software Engineering</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fas fa-tag"></i>
+              <a href="https://kylejmcintyre.github.io/tag/athena.html">#athena</a>,               <a href="https://kylejmcintyre.github.io/tag/avro.html">#avro</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>Back in September of 2019, AWS added support to Athena to enable Create Table as Select (CTAS) statements,
+as well as INSERT INTO statements. These statements allow the the results of a query to be used
+to construct a new table (CTAS) or appended to another table (INSERT INTO). This was a big step forward for
+Athena because having this support enables it to fulfill some ETL needs. A primary use case is to convert the format
+of data that underlies an Athena table.</p>
+<p>It's certainly not unusual for apps to produce individual JSON records and store them as objects in S3. And
+with Athena, you can define a lazy schema that enables Presto (under the hood of Athena) to do some nice
+distributed queries against them (asynchronously). However, a bunch of individual objects result in poorer
+query performance as a dataset gets larger. So it's recommended to convert your data into a 'big data' file
+format such as ORC, Parquet or Avro. Each of these formats have tradeoffs, but Avro is definitely the
+outlier of the three under discussion. ORC and Parquet are columnar formats, whereas Avro is row-based. That
+makes the structure of Avro more akin to a relational database table or spreadsheet, albeit very nicely 
+compressed and with its schema declared in the file header. Roughly speaking, the columnar formats are what
+you want to use if you're planning to do lots of 'analytical' queries involving a few columns, such as sums 
+and averages grouped by certain columns. However, if you're planning to essentially select a bunch of full rows
+back out of your big data files, Avro is arguably a better fit since reconstructing full rows out of columnar
+formats can involve a lot of jumping around, especially if your data is rather wide. In a recent use case I needed
+to support fetching a lot of full rows of fairly wide data, so I endeavored to get Athena to do a conversion from JSON to Avro for me. 
+In the end it all worked great and I very much enjoyed the serverless and mostly "codeless" approach. However,
+I did hit one snag worth sharing with the world.</p>
+<p>To set the stage, consider the following Athena table declarations, which are actually Hive DDL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span> <span class="k">EXTERNAL</span> <span class="k">TABLE</span> <span class="k">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span> <span class="n">activity_json_staging</span> <span class="p">(</span>
+  <span class="n">activityId</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">startTime</span> <span class="k">TIMESTAMP</span><span class="p">,</span>
+  <span class="n">endTime</span> <span class="k">TIMESTAMP</span><span class="p">,</span>
+  <span class="n">contactState</span> <span class="n">STRUCT</span><span class="o">&lt;</span><span class="n">raw</span><span class="p">:</span> <span class="n">STRING</span><span class="o">&gt;</span><span class="p">,</span>
+  <span class="n">creationDate</span> <span class="nb">DATE</span>
+<span class="p">)</span> 
+<span class="k">ROW</span> <span class="n">FORMAT</span> <span class="n">serde</span> <span class="s1">&#39;org.apache.hive.hcatalog.data.JsonSerDe&#39;</span>
+<span class="k">LOCATION</span> <span class="s1">&#39;s3://foo-bucket/activity-json-staging&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span> <span class="k">EXTERNAL</span> <span class="k">TABLE</span> <span class="k">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span> <span class="n">activity_avro_base</span> <span class="p">(</span>
+  <span class="n">activityId</span> <span class="n">STRING</span><span class="p">,</span>
+  <span class="n">startTime</span> <span class="k">TIMESTAMP</span><span class="p">,</span>
+  <span class="n">endTime</span> <span class="k">TIMESTAMP</span><span class="p">,</span>
+  <span class="n">contactState</span> <span class="n">STRUCT</span><span class="o">&lt;</span><span class="n">raw</span><span class="p">:</span> <span class="n">STRING</span><span class="o">&gt;</span>
+<span class="p">)</span> 
+<span class="n">PARTITIONED</span> <span class="k">BY</span> <span class="p">(</span><span class="n">creationDate</span> <span class="nb">DATE</span><span class="p">)</span> 
+<span class="k">ROW</span> <span class="n">FORMAT</span> <span class="n">serde</span> <span class="s1">&#39;org.apache.hadoop.hive.serde2.avro.AvroSerDe&#39;</span> <span class="k">WITH</span> <span class="n">SERDEPROPERTIES</span> <span class="p">(</span><span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{</span>
+<span class="s1">  &quot;type&quot; : &quot;record&quot;,</span>
+<span class="s1">  &quot;name&quot; : &quot;ContactActivityRecord&quot;,</span>
+<span class="s1">  &quot;namespace&quot; : &quot;default&quot;,</span>
+<span class="s1">  &quot;fields&quot; : [ {</span>
+<span class="s1">    &quot;name&quot; : &quot;activityId&quot;,</span>
+<span class="s1">    &quot;type&quot; : [ &quot;null&quot;, &quot;string&quot; ],</span>
+<span class="s1">    &quot;default&quot; : null</span>
+<span class="s1">  }, {</span>
+<span class="s1">    &quot;name&quot; : &quot;startTime&quot;,</span>
+<span class="s1">    &quot;type&quot; : [ &quot;null&quot;, &quot;long&quot; ],</span>
+<span class="s1">    &quot;default&quot; : null</span>
+<span class="s1">  }, {</span>
+<span class="s1">    &quot;name&quot; : &quot;endTime&quot;,</span>
+<span class="s1">    &quot;type&quot; : [ &quot;null&quot;, &quot;long&quot; ],</span>
+<span class="s1">    &quot;default&quot; : null</span>
+<span class="s1">  }, {</span>
+<span class="s1">    &quot;name&quot; : &quot;contactState&quot;,</span>
+<span class="s1">    &quot;type&quot; : {</span>
+<span class="s1">      &quot;type&quot; : &quot;record&quot;,</span>
+<span class="s1">      &quot;name&quot; : &quot;Contact&quot;,</span>
+<span class="s1">      &quot;namespace&quot; : &quot;default&quot;,</span>
+<span class="s1">      &quot;fields&quot; : [ {</span>
+<span class="s1">        &quot;name&quot; : &quot;raw&quot;,</span>
+<span class="s1">        &quot;type&quot; : [ &quot;null&quot;, &quot;string&quot; ],</span>
+<span class="s1">        &quot;default&quot; : null</span>
+<span class="s1">      } ]</span>
+<span class="s1">    }</span>
+<span class="s1">  } ]</span>
+<span class="s1">}&#39;</span><span class="p">)</span>
+<span class="n">STORED</span> <span class="k">AS</span> <span class="n">AVRO</span>
+<span class="k">LOCATION</span> <span class="s1">&#39;s3://foo-bucket/activity-avro-base&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+
+<p>The first table is a JSON-backed table, while the second is Avro-backed. This is determined by the serde declaration. With Avro, you're expected to provide
+an Avro schema declaration and pass it in as a literal via SERDEPROPERTIES. This is kind of annoying since it feels like you're just repeating the Hive schema in another dialect. 
+An important exception to that statement is that you don't declare avro schema for any fields that are part of the table's partition declaration. 
+In the end I created a POJO-like data structure for declaring what an Athena table looks like, and generated the Hive DDL and Avro schema from that. </p>
+<p>So the general idea is to use an INSERT INTO statement to take the individual JSON records underlying the activity_json_staging table and move them 
+into activity_avro_base. </p>
+<div class="highlight"><pre><span></span><code><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">activity_json_staging</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">activity_avro_base</span><span class="p">;</span>
+</code></pre></div>
+
+
+<p>As a byproduct of them being moved, their format will be changed, they'll be batched and they'll be partitioned because
+the second table has a partition declared. Pretty slick, right?  However, upon testing the data transfer, I was confronted with a 
+runtime error that provided essentially zero guidance and for which I couldn't find any relevant resources on the internet!</p>
+<div class="highlight"><pre><span></span><code><span class="n">HIVE_WRITER_DATA_ERROR</span><span class="o">:</span> <span class="n">HIVE_WRITER_DATA_ERROR</span><span class="o">.</span> <span class="n">If</span> <span class="n">a</span> <span class="n">data</span> <span class="n">manifest</span> <span class="n">file</span> <span class="n">was</span> <span class="n">generated</span> <span class="n">at</span> 
+<span class="s1">&#39;s3://foo-bucket/query-results/e52567d6-b56f-4fde-8514-8887d6f58f22-manifest.csv&#39;</span><span class="o">,</span> 
+<span class="n">you</span> <span class="n">may</span> <span class="n">need</span> <span class="n">to</span> <span class="n">manually</span> <span class="n">clean</span> <span class="n">the</span> <span class="n">data</span> <span class="n">from</span> <span class="n">locations</span> <span class="n">specified</span> <span class="k">in</span> <span class="n">the</span> <span class="n">manifest</span><span class="o">.</span> 
+<span class="n">Athena</span> <span class="n">will</span> <span class="n">not</span> <span class="n">delete</span> <span class="n">data</span> <span class="k">in</span> <span class="n">your</span> <span class="n">account</span><span class="o">.</span>
+</code></pre></div>
+
+
+<p>And...that was it. I scoured the API results, CLI output and the AWS UI for more information but couldn't find any. And all Google turned up was the <a href="https://github.com/prestodb/presto/blob/master/presto-hive/src/main/java/com/facebook/presto/hive/RecordFileWriter.java">Presto source code</a> that presumably emits it. 
+So, it was one of those memorable experiences where you basically binary search your schema/input for the problem until you pinpoint it. In the end,
+the problem was that one of my JSON records had the value <code>null</code> for contactState. The Hive DDL was fine with this, but the Avro schema was not. The fix was to 
+change the Avro declaration for the contactState field as follows:</p>
+<div class="highlight"><pre><span></span><code>  <span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span> <span class="p">:</span> <span class="s2">&quot;contactState&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;type&quot;</span> <span class="p">:</span> <span class="p">[{</span>
+      <span class="nt">&quot;type&quot;</span> <span class="p">:</span> <span class="s2">&quot;record&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;name&quot;</span> <span class="p">:</span> <span class="s2">&quot;Contact&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;namespace&quot;</span> <span class="p">:</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;fields&quot;</span> <span class="p">:</span> <span class="p">[</span> <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span> <span class="p">:</span> <span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span> <span class="p">:</span> <span class="p">[</span> <span class="s2">&quot;null&quot;</span><span class="p">,</span> <span class="s2">&quot;string&quot;</span> <span class="p">],</span>
+        <span class="nt">&quot;default&quot;</span> <span class="p">:</span> <span class="kc">null</span>
+      <span class="p">}]</span>
+    <span class="p">},</span> <span class="s2">&quot;null&quot;</span><span class="p">]</span>
+  <span class="p">}</span>
+</code></pre></div>
+
+
+<p>Note that its type property is now an array and includes a string value of "null". Yep, that was it. Silly me! Things have been working great since then but I have lingering concerns about receiving such 
+minimal diagnostic info on what seems like a pretty common mistake. Anyway, sharing it here in hopes it helps someone else. You may be wondering why I'm doing this in Athena instead of explicitly in Glue,
+and I guess the answer is to limit my cloud-specific dependencies. </p>
+    </div>
+  </article>
+  <hr>
+  <div id="disqus_thread"></div>
+  <script>
+    var disqus_config = function() {
+      this.page.url = 'https://kylejmcintyre.github.io/using-athena-to-convert-individual-json-objects-to-avro-files.html';
+      this.page.identifier = 'using-athena-to-convert-individual-json-objects-to-avro-files';
+    };
+    (function() {
+      var d = document;
+      var s = d.createElement('script');
+      s.src = '//kylemcintyre.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', +new Date());
+      (d.head || d.body).appendChild(s);
+    })();
+  </script>
+  <noscript class="text-muted">
+    Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a>
+  </noscript>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="https://kylejmcintyre.github.io/archives.html">Archives</a></li>
+    <li class="list-inline-item"><a href="https://kylejmcintyre.github.io/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="https://kylejmcintyre.github.io/tags.html">Tags</a></li>
+  </ul>
+  <p class="col-sm-6 text-sm-right text-muted">
+    Generated by <a href="https://github.com/getpelican/pelican" target="_blank">Pelican</a>
+    / <a href="https://github.com/nairobilug/pelican-alchemy" target="_blank">&#x2728;</a>
+  </p>
+</div>    </div>
+  </footer>
+
+</body>
+
+</html>
