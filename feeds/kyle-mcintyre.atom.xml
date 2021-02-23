@@ -1,5 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Kyle McIntyre - Kyle McIntyre</title><link href="https://kylemcintyre.com/" rel="alternate"></link><link href="https://kylemcintyre.com/feeds/kyle-mcintyre.atom.xml" rel="self"></link><id>https://kylemcintyre.com/</id><updated>2021-02-12T10:20:00-07:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>Using Athena to convert individual JSON objects to Avro files</title><link href="https://kylemcintyre.com/using-athena-to-convert-individual-json-objects-to-avro-files.html" rel="alternate"></link><published>2021-02-12T10:20:00-07:00</published><updated>2021-02-12T10:20:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-02-12:/using-athena-to-convert-individual-json-objects-to-avro-files.html</id><summary type="html">&lt;p&gt;Back in September of 2019, AWS added support to Athena to enable Create Table as Select (CTAS) statements,
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Kyle McIntyre - Kyle McIntyre</title><link href="https://kylemcintyre.com/" rel="alternate"></link><link href="https://kylemcintyre.com/feeds/kyle-mcintyre.atom.xml" rel="self"></link><id>https://kylemcintyre.com/</id><updated>2021-02-23T20:34:00-07:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>Clean install of JuptyerHub and JupyterLab on Ubuntu w/ Google OAuth &amp; qgrid</title><link href="https://kylemcintyre.com/clean-install-of-juptyerhub-and-jupyterlab-on-ubuntu-w-google-oauth-qgrid.html" rel="alternate"></link><published>2021-02-23T20:34:00-07:00</published><updated>2021-02-23T20:34:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-02-23:/clean-install-of-juptyerhub-and-jupyterlab-on-ubuntu-w-google-oauth-qgrid.html</id><summary type="html">&lt;p&gt;I recently undertook the project of installing JupyterHub and JupyterLab on our 
+development servers at Quiq. The servers are currently running Ubuntu 18.04.+ and are managed via Ansible. Users
+access the servers solely via SSH and leverage port forwarding. My goal was to give each
+user with an existing …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I recently undertook the project of installing JupyterHub and JupyterLab on our 
+development servers at Quiq. The servers are currently running Ubuntu 18.04.+ and are managed via Ansible. Users
+access the servers solely via SSH and leverage port forwarding. My goal was to give each
+user with an existing account access to their own JupyterLab workspace (via the hub), with access
+to a shared directory for file/notebook exchange. &lt;/p&gt;
+&lt;p&gt;&lt;a href="https://tljh.jupyter.org/en/latest/"&gt;TLJH&lt;/a&gt; is a popular option, but I wasn't too keen on some of the more
+opinionated choices it made, or perhaps I just wasn't comfortable with not understanding its inner-workings. So,
+I endeavored to install the projects directly. I used &lt;a href="https://jupyterhub.readthedocs.io/en/stable/installation-guide-hard.html"&gt;this guide from JupyterHub&lt;/a&gt; 
+as a reference for how to install them 'from the ground up'. It was an immensely helpful resource, but it has some quirks/drawbacks that I 
+tried to address:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;It isn't in a reproducible/repeatable form&lt;/li&gt;
+&lt;li&gt;It uses a virtual env based on the system python for the JuptyerHub runtime, and a separate conda-based runtime for the user kernel&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The second point was particularly problematic. For one, basing anything off the system python gives you older versions of everything and makes it tempting 
+to mess with the system python to resolve dependency hell issues - which is obviously a bad idea. The other problem
+was caused by version mismatches between the jupyter hub runtime and the kernel runtime. Specifically, I struggled to get the awesome qgrid project
+to work with symptoms identical to &lt;a href="https://github.com/quantopian/qgrid/issues/183"&gt;this issue&lt;/a&gt; which sites version mismatches as the likely culprit.
+I eventually scrapped the approach of having two separate python runtimes and just focused on a single conda-based runtime. Having two runtimes
+would've been fine too - the main problems came from basing anything off of the system python, but I collapsed down to just a single runtime for simplicity. &lt;/p&gt;
+&lt;h3&gt;The Goods&lt;/h3&gt;
+&lt;p&gt;The non-ansibled result of my efforts are in available in &lt;a href="https://gist.github.com/kylejmcintyre/3c0bd9a70c8693d50d23203bbadbce5d"&gt;this gist&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The following are notable things about this gist relative to Jupyter's 'from the ground up' guide:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;It assumes miniconda has been installed to /opt/miniconda&lt;/li&gt;
+&lt;li&gt;It creates and uses a single new conda-based python environment that is completely separate from the system python&lt;/li&gt;
+&lt;li&gt;It doesn't install a nodejs-based reverse proxy server - users access JupyterHub by establishing port forwarding on port 8889&lt;/li&gt;
+&lt;li&gt;It installs the OAuthenticator project and leverages Google OAuth to sign users in&lt;/li&gt;
+&lt;li&gt;The Google OAuth callback assumes users forward the port locally through 8089&lt;/li&gt;
+&lt;li&gt;It installs the qgrid package &amp;amp; extension&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Yes, it's a bit redundant that my users must go through the Google OAuth flow since they must be logged into the server 
+in order to forward the necessary port. But JuptyerHub has no way to know that and the users breeze through it. I confirmed 
+that when using Google OAuth, if the username preceding the @ in the Google account matches a user account on the server, 
+that account is used for starting the kernel and their home directory is visible in the file explorer. If your users' Google
+accounts don't match their usernames on your servers, I believe you can fix this via &lt;a href="https://jupyterhub.readthedocs.io/en/stable/reference/authenticators.html"&gt;username normalization&lt;/a&gt; - but I didn't have to.&lt;/p&gt;
+&lt;p&gt;In order to accomplish basic file sharing, I simply created a shared directory on the servers and insured that all users had
+a &lt;code&gt;shared&lt;/code&gt; symlink in their home directory pointing to that location. In the end, the install script and setup is fairly minimal
+but it took me enough trial and error that I wanted to share it with the world. Cheers!&lt;/p&gt;
+&lt;script src="https://gist.github.com/kylejmcintyre/3c0bd9a70c8693d50d23203bbadbce5d.js"&gt;&lt;/script&gt;</content><category term="Software Engineering"></category><category term="python"></category><category term="jupyter"></category><category term="ubuntu"></category><category term="qgrid"></category></entry><entry><title>Using Athena to convert individual JSON objects to Avro files</title><link href="https://kylemcintyre.com/using-athena-to-convert-individual-json-objects-to-avro-files.html" rel="alternate"></link><published>2021-02-12T10:20:00-07:00</published><updated>2021-02-12T10:20:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-02-12:/using-athena-to-convert-individual-json-objects-to-avro-files.html</id><summary type="html">&lt;p&gt;Back in September of 2019, AWS added support to Athena to enable Create Table as Select (CTAS) statements,
 as well as INSERT INTO statements. These statements allow the the results of a query to be used
 to construct a new table (CTAS) or appended to another table (INSERT INTO). This …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Back in September of 2019, AWS added support to Athena to enable Create Table as Select (CTAS) statements,
 as well as INSERT INTO statements. These statements allow the the results of a query to be used
