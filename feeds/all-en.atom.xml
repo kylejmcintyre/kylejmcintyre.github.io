@@ -1,5 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Kyle McIntyre</title><link href="https://kylemcintyre.com/" rel="alternate"></link><link href="https://kylemcintyre.com/feeds/all-en.atom.xml" rel="self"></link><id>https://kylemcintyre.com/</id><updated>2021-02-23T20:34:00-07:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>Clean install of JuptyerHub and JupyterLab on Ubuntu w/ Google OAuth &amp; qgrid</title><link href="https://kylemcintyre.com/clean-install-of-juptyerhub-and-jupyterlab-on-ubuntu-w-google-oauth-qgrid.html" rel="alternate"></link><published>2021-02-23T20:34:00-07:00</published><updated>2021-02-23T20:34:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-02-23:/clean-install-of-juptyerhub-and-jupyterlab-on-ubuntu-w-google-oauth-qgrid.html</id><summary type="html">&lt;p&gt;I recently undertook the project of installing JupyterHub and JupyterLab on our 
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Kyle McIntyre</title><link href="https://kylemcintyre.com/" rel="alternate"></link><link href="https://kylemcintyre.com/feeds/all-en.atom.xml" rel="self"></link><id>https://kylemcintyre.com/</id><updated>2021-03-19T17:55:00-06:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>Java's String.length() probably doesn't mean what you think it means...</title><link href="https://kylemcintyre.com/javas-stringlength-probably-doesnt-mean-what-you-think-it-means.html" rel="alternate"></link><published>2021-03-19T17:55:00-06:00</published><updated>2021-03-19T17:55:00-06:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-03-19:/javas-stringlength-probably-doesnt-mean-what-you-think-it-means.html</id><summary type="html">&lt;p&gt;&lt;img alt="Image of Princess Bride Inconceivable Guy" src="images/inconceivable.jpg"&gt;&lt;/p&gt;
+&lt;p&gt;Today I inconceivably discovered that String.length() doesn’t mean what I thought it did. I knew it wasn’t 
+the number of bytes that it took to store the string, so I assumed it was the number of logical characters in the string. 
+However, depending on your definition of …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="Image of Princess Bride Inconceivable Guy" src="images/inconceivable.jpg"&gt;&lt;/p&gt;
+&lt;p&gt;Today I inconceivably discovered that String.length() doesn’t mean what I thought it did. I knew it wasn’t 
+the number of bytes that it took to store the string, so I assumed it was the number of logical characters in the string. 
+However, depending on your definition of ‘logical characters’, that might not be correct at all. &lt;/p&gt;
+&lt;p&gt;How long is this string?&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;  “Hey good looking 😉”
+   123456789012345678
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Based on the above, I’d say the string is 18 characters long. But String.length() returns 19. Why? Obviously something to do with that pesky emoji...&lt;/p&gt;
+&lt;p&gt;A String in Java is an immutable array of char. String.length() is the length of that array i.e. the number of instances of 
+char comprising the string. A char is a primitive, which has a defined size of two bytes. &lt;/p&gt;
+&lt;p&gt;Why two bytes? I assume a big reason for this is because Java uses UTF-16 as its native byte-level representation of strings. 
+UTF-16’s name refers to the 16 bits (2 bytes) in each “code unit”. UTF-16 uses either one or two code units to refer to any 
+character (code point) in the Unicode standard. The 😉 emoji requires two. Because 16 bit code units are the building blocks of UTF-16 encodings, 
+and Java chose UTF-16 to store strings internally, a char being two bytes wide makes good sense.&lt;/p&gt;
+&lt;p&gt;So as it turns out, String.length() actually gives you the count of the number of code units required to store the string in a UTF-16 
+representation, not the number of ‘logical characters’ - or code points as Unicode calls them - in your string. Let’s look at our example again:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;“Hey good looking 😉”&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Logical length/number of code points: 18&lt;/li&gt;
+&lt;li&gt;String.length(): 19&lt;/li&gt;
+&lt;li&gt;Number of bytes to store in UTF-16: 19 * 2 = 38&lt;/li&gt;
+&lt;li&gt;Number of bytes to store in UTF-8: 21 &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I should point out that this problem isn’t just about Emoji - it’s about any characters outside of the BMP. So is String.length() 
+defined in a dumb way? No, it’s exactly what you want in many cases given the choice of UTF-16 for an internal representation. 
+It works great when doing internal stuff in a Java application and you can pretty much ignore this problem. But be careful when 
+talking to third-party APIs. In these scenarios you’ll likely be dealing with byte counts or code point counts.&lt;br&gt;
+I assumed String.length() would work out correctly with the latter in Google’s DLP API, but I was wrong. &lt;/p&gt;
+&lt;p&gt;One way to get the logical length of a string variable foo, AKA the code point count, is as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;codePointCount&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;length&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Also, here’s a handy function that’s not in the standard library, but should be?&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="n"&gt;unicodeSubstring&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Int&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stop&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Int&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;String&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+  &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;substring&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;offsetByCodePoints&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start&lt;/span&gt;&lt;span class="o"&gt;),&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;offsetByCodePoints&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stop&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</content><category term="Software Engineering"></category><category term="java"></category><category term="strings"></category><category term="unicode"></category><category term="dlp"></category></entry><entry><title>Clean install of JuptyerHub and JupyterLab on Ubuntu w/ Google OAuth &amp; qgrid</title><link href="https://kylemcintyre.com/clean-install-of-juptyerhub-and-jupyterlab-on-ubuntu-w-google-oauth-qgrid.html" rel="alternate"></link><published>2021-02-23T20:34:00-07:00</published><updated>2021-02-23T20:34:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-02-23:/clean-install-of-juptyerhub-and-jupyterlab-on-ubuntu-w-google-oauth-qgrid.html</id><summary type="html">&lt;p&gt;I recently undertook the project of installing JupyterHub and JupyterLab on our 
 development servers at Quiq. The servers are currently running Ubuntu 18.04.+ and are managed via Ansible. Users
 access the servers solely via SSH and leverage port forwarding. My goal was to give each
 user with an existing …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I recently undertook the project of installing JupyterHub and JupyterLab on our 
