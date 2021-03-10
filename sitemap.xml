@@ -5,34 +5,34 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>https://kylemcintyre.com/</loc>
-<lastmod>2021-03-09T18:15:56-00:00</lastmod>
+<lastmod>2021-03-09T18:28:58-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.5</priority>
 </url>
 
 <url>
 <loc>https://kylemcintyre.com/pages/about.html</loc>
-<lastmod>2021-03-09T18:15:56-00:00</lastmod>
+<lastmod>2021-03-09T18:28:58-00:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
 </url>
 
 <url>
 <loc>https://kylemcintyre.com/pages/resume.html</loc>
-<lastmod>2021-03-09T18:15:56-00:00</lastmod>
+<lastmod>2021-03-09T18:28:58-00:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
 </url>
 
 <url>
 <loc>https://kylemcintyre.com/pages/more.html</loc>
-<lastmod>2021-03-09T18:15:56-00:00</lastmod>
+<lastmod>2021-03-09T18:28:58-00:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
 </url>
 
 <url>
-<loc>https://kylemcintyre.com/javas-stringlength-probably-doesnt-mean-what-you-think-it-means.html</loc>
+<loc>https://kylemcintyre.com/stringlength-i-do-not-think-it-means-what-you-think-it-means.html</loc>
 <lastmod>2021-03-19T17:55:00-06:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
