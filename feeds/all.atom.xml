@@ -1,5 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Kyle McIntyre</title><link href="https://kylemcintyre.com/" rel="alternate"></link><link href="https://kylemcintyre.com/feeds/all.atom.xml" rel="self"></link><id>https://kylemcintyre.com/</id><updated>2021-03-09T17:55:00-07:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>String.length(): I Do Not Think It Means What You Think It Means</title><link href="https://kylemcintyre.com/stringlength-i-do-not-think-it-means-what-you-think-it-means.html" rel="alternate"></link><published>2021-03-09T17:55:00-07:00</published><updated>2021-03-09T17:55:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-03-09:/stringlength-i-do-not-think-it-means-what-you-think-it-means.html</id><summary type="html">&lt;p&gt;&lt;img alt="Image of Princess Bride Inconceivable Guy" src="images/inconceivable.jpg"&gt;&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Kyle McIntyre</title><link href="https://kylemcintyre.com/" rel="alternate"></link><link href="https://kylemcintyre.com/feeds/all.atom.xml" rel="self"></link><id>https://kylemcintyre.com/</id><updated>2021-04-08T20:17:00-06:00</updated><subtitle>Software engineering, data science, hobby farming and other pursuits</subtitle><entry><title>Roll the Dice: A fun probability experiment for all ages</title><link href="https://kylemcintyre.com/roll-the-dice-a-fun-probability-experiment-for-all-ages.html" rel="alternate"></link><published>2021-04-08T20:17:00-06:00</published><updated>2021-04-08T20:17:00-06:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-04-08:/roll-the-dice-a-fun-probability-experiment-for-all-ages.html</id><summary type="html">&lt;p&gt;Last fall I started teaching coding concepts at the local grade school on a volunteer basis. Every month I spend
+roughly 2 hours conducting a workshop for approximately 15 students. We've had a lot of fun and I've enjoyed the challenge
+of coming up with meaningful lessons and projects. The …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Last fall I started teaching coding concepts at the local grade school on a volunteer basis. Every month I spend
+roughly 2 hours conducting a workshop for approximately 15 students. We've had a lot of fun and I've enjoyed the challenge
+of coming up with meaningful lessons and projects. The biggest challenge has been that my students range from 3rd graders to 8th graders. 
+This is rural Montana after all. So most of my effort is spent thinking of good workshops rather than coding prep.  &lt;/p&gt;
+&lt;p&gt;To kick off each workshop, I like to pose a 'random question of the day' that sets the stage for the workshop. 
+At our last workshop, the random question was as follows: &lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;What number are you most likely to get when you roll two dice and add them together? &lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;This question led me to put together this simple project that even my 1st grader seemed to grok.&lt;/p&gt;
+&lt;h3&gt;Roll the Dice&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;Prerequisites: the student must know their numbers and be able to perform addition of small numbers&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Estimated Time: 30 minutes&lt;/em&gt;&lt;/p&gt;
+&lt;h5&gt;1. Find a pair of dice and a piece of paper and pencil (or a chalkboard, or a Google doc...)&lt;/h5&gt;
+&lt;h5&gt;2. Ask your student(s) some leading questions&lt;/h5&gt;
+&lt;ul&gt;
+&lt;li&gt;What are all of the possible outcomes of rolling two dice and adding them together? &lt;ul&gt;
+&lt;li&gt;Young kids: "What's the biggest number we could get?" "What's the smallest number we could get?" "Can we get every number inbetween?"&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;(Answer: 2, 3 ... 11, 12)&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Are all the outcomes equally likely? &lt;ul&gt;
+&lt;li&gt;Young kids: "Will we get 2 as often as we get 9?" "Which number will we get the most or are they all the same?"&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;(Answer: no, but don't tell them yet)&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;What are some ways we could figure out the answer to the last question? &lt;ul&gt;
+&lt;li&gt;Some older wiz kids might be able to come up with the theoretical proof&lt;/li&gt;
+&lt;li&gt;But we're generally trying to push them towards the idea that we could run an experiment&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h5&gt;3. A manual experiment&lt;/h5&gt;
+&lt;ul&gt;
+&lt;li&gt;Have the student(s) roll the dice and add them together at least 20 times. Keep tally marks of how many times they roll each possible result. You might get something like this:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;2  - |
+3  - 
+4  - ||
+5  - ||
+6  - ||||
+7  - ||
+8  - |||
+9  - |||
+10 - 
+11 - |||
+12 - 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Note: if you do this neatly with good spacing, you'll end up with a poor man's histogram&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Ask the student which outcome seems to be most likely based on the experiment&lt;/li&gt;
+&lt;li&gt;If one of the outcomes never happens, ask the student if they can assume it will never happen based on their experiment - they'll probably respond no!&lt;/li&gt;
+&lt;li&gt;What's wrong with our experiment then? Why can't we trust it's results? &lt;ul&gt;
+&lt;li&gt;&lt;em&gt;Answer: we need a much larger sample set, i.e. we didn't roll the dice enough times to really get a good idea of what happens&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h5&gt;4. A computer experiment&lt;/h5&gt;
+&lt;ul&gt;
+&lt;li&gt;We'd like to roll the dice 10,000 times so that we can feel good about our experiment&lt;ul&gt;
+&lt;li&gt;Ask the student if they're up for it 😂&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Instead of doing the physical experiment 10,000 times, we'll have the computer do it for us...&lt;/li&gt;
+&lt;li&gt;Visit &lt;a href="https://replit.com/@avoncoders/RollTheDice" target=new&gt;https://replit.com/@avoncoders/RollTheDice&lt;/a&gt; to get my code for the experiment and click &lt;code&gt;Fork&lt;/code&gt; in the upper right&lt;/li&gt;
+&lt;li&gt;You may need to create an account - you can do Google single sign-on&lt;/li&gt;
+&lt;li&gt;Once you have your own copy of the code, click the green run button in the top middle&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;When you run the code, it will perform the same experiment with 20 rolls, and produce a dubious result like this, similar to the manual experiment:&lt;/p&gt;
+&lt;p&gt;&lt;img src="images/dice20.png" alt="dice20" width="300"/&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Now, press the grey &lt;code&gt;Stop&lt;/code&gt; button in the middle top. Change the value of numberOfRolls to e.g. 100. Press &lt;code&gt;Run&lt;/code&gt; again&lt;/li&gt;
+&lt;li&gt;Repeat the above step for e.g. 100, 1000, 10000 and see how the results take shape&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src="images/dice100.png" alt="dice100" width="300"/&gt;
+&lt;img src="images/dice1000.png" alt="dice1000" width="300"/&gt;
+&lt;img src="images/dice10000.png" alt="dice10000" width="300"/&gt;&lt;/p&gt;
+&lt;h5&gt;5. Conclusions&lt;/h5&gt;
+&lt;ul&gt;
+&lt;li&gt;Clearly, not all outcomes are equally likely&lt;/li&gt;
+&lt;li&gt;Which number is the most likely? 7&lt;ul&gt;
+&lt;li&gt;Why? Because there are many more ways to get a 7 then there are to get a 12. To roll a twelve, you need two sixes. To roll a seven you could have any combination of (1, 6), (2, 5), (3, 4)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;If our experiment doesn't have enough trials/samples, we can't trust the result. If we ran the experiment infinite times, we'd have the exact probability/chances of each outcom&lt;/li&gt;
+&lt;li&gt;If your student(s) have played Settlers of Catan, they'll now understand why you move the Robber whenever a 7 is rolled, and why the tiles associated with 6 and 8 are highly coveted&lt;/li&gt;
+&lt;li&gt;The computer was able to run an experiment that would've taken us days in less than a second. That is amazing.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;After going through this with my first grader, I asked him "If someone approached you on the playground and offered to pay you a dollar for guessing the sum of two dice they were going to roll, what would you guess?" 
+His answer "I'd definitely go with 7". "Always?". "Always." Proud parenting moment there. &lt;/p&gt;
+&lt;h5&gt;Bonus&lt;/h5&gt;
+&lt;p&gt;What are the true probabilities of each outcome? The 'theoretical' approach to solving the problem is as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;There is one way to make 2: (1-1)&lt;/li&gt;
+&lt;li&gt;There are two ways to make 3: (1-2) and (2-1)&lt;/li&gt;
+&lt;li&gt;There are three ways to make 4: (1-3) and (2-2) and (3-1)&lt;/li&gt;
+&lt;li&gt;There are four ways to make 5: (1-4) and (2-3) and (3-2) and (4-1)&lt;/li&gt;
+&lt;li&gt;There are five ways to make 6: (1-5) and (2-4) and (3-3) and (4-2) and (5-1)&lt;/li&gt;
+&lt;li&gt;There are six ways to make 7: (1-6) and (2-5) and (3-4) and (4-3) and (5-2) and (1-6)&lt;/li&gt;
+&lt;li&gt;There are five ways to make 8: similar logic to ways to make six&lt;/li&gt;
+&lt;li&gt;There are four ways to make 9: similar logic to ways to make five&lt;/li&gt;
+&lt;li&gt;There are three ways to make 10: similar logic to ways to make four&lt;/li&gt;
+&lt;li&gt;There are two ways to make 11: similar logic to ways to make three&lt;/li&gt;
+&lt;li&gt;There is one way to make 12: similar logic to ways to make one&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;There are a total of 36 outcomes when you roll two dice. 6 of those outcomes will sum to 7, so 6/36 or 1/6th chance of rolling a seven. The full list of probabilities is as follows:&lt;/p&gt;
+&lt;table cellpadding=10&gt;
+  &lt;tr&gt;&lt;th&gt;2&lt;/th&gt;&lt;th&gt;3&lt;/th&gt;&lt;th&gt;4&lt;/th&gt;&lt;th&gt;5&lt;/th&gt;&lt;th&gt;6&lt;/th&gt;&lt;th&gt;7&lt;/th&gt;&lt;th&gt;8&lt;/th&gt;&lt;th&gt;9&lt;/th&gt;&lt;th&gt;10&lt;/th&gt;&lt;th&gt;11&lt;/th&gt;&lt;th&gt;12&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;1/36&lt;/td&gt;&lt;td&gt;1/18&lt;/td&gt;&lt;td&gt;1/12&lt;/td&gt;&lt;td&gt;1/9&lt;/td&gt;&lt;td&gt;5/36&lt;/td&gt;&lt;td&gt;1/6&lt;/td&gt;&lt;td&gt;5/36&lt;/td&gt;&lt;td&gt;1/9&lt;/td&gt;&lt;td&gt;1/12&lt;/td&gt;&lt;td&gt;1/18&lt;/td&gt;&lt;td&gt;1/36&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;</content><category term="Teaching Programming"></category><category term="dice"></category><category term="probability"></category><category term="python"></category></entry><entry><title>String.length(): I Do Not Think It Means What You Think It Means</title><link href="https://kylemcintyre.com/stringlength-i-do-not-think-it-means-what-you-think-it-means.html" rel="alternate"></link><published>2021-03-09T17:55:00-07:00</published><updated>2021-03-09T17:55:00-07:00</updated><author><name>Kyle McIntyre</name></author><id>tag:kylemcintyre.com,2021-03-09:/stringlength-i-do-not-think-it-means-what-you-think-it-means.html</id><summary type="html">&lt;p&gt;&lt;img alt="Image of Princess Bride Inconceivable Guy" src="images/inconceivable.jpg"&gt;&lt;/p&gt;
 &lt;p&gt;Today I inconceivably discovered that String.length() doesn’t mean what I thought it did. I knew it wasn’t 
 the number of bytes that it took to store the string, so I assumed it was the number of logical characters in the string. 
 However, depending on your definition of …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="Image of Princess Bride Inconceivable Guy" src="images/inconceivable.jpg"&gt;&lt;/p&gt;

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>  Roll the Dice: A fun probability experiment for all ages | Kyle McIntyre
+</title>
+  <link rel="canonical" href="https://kylemcintyre.com/roll-the-dice-a-fun-probability-experiment-for-all-ages.html">
+
+
+  <link rel="stylesheet" href="https://kylemcintyre.com/styles/bootstrap.css">
+  <link rel="stylesheet" href="https://kylemcintyre.com/theme/css/fontawesome.min.css">
+  <link rel="stylesheet" href="https://kylemcintyre.com/theme/css/pygments/default.min.css">
+  <link rel="stylesheet" href="https://kylemcintyre.com/theme/css/theme.css">
+
+  <link rel="alternate" type="application/atom+xml" title="Full Atom Feed"
+        href="https://kylemcintyre.com/feeds/all.atom.xml">
+  <link rel="alternate" type="application/atom+xml" title="Categories Atom Feed"
+        href="https://kylemcintyre.com/feeds/teaching-programming.atom.xml">  
+  <meta name="description" content="Last fall I started teaching coding concepts at the local grade school on a volunteer basis. Every month I spend roughly 2 hours conducting a workshop for approximately 15 students. We've had a lot of fun and I've enjoyed the challenge of coming up with meaningful lessons and projects. The …">
+
+
+</head>
+
+<body>
+  <header class="header">
+    <div class="container">
+<div class="row">
+    <div class="col-sm-4">
+      <a href="https://kylemcintyre.com/">
+        <img class="img-fluid rounded" src=https://kylemcintyre.com/images/profile.png alt="Kyle McIntyre">
+      </a>
+    </div>
+  <div class="col-sm-8">
+    <h1 class="title"><a href="https://kylemcintyre.com/">Kyle McIntyre</a></h1>
+      <p class="text-muted">Software engineering, data science, hobby farming and other pursuits</p>
+      <ul class="list-inline">
+            <li class="list-inline-item"><a href="https://kylemcintyre.com/pages/about.html">About</a></li>
+            <li class="list-inline-item"><a href="https://kylemcintyre.com/pages/resume.html">Resume</a></li>
+            <li class="list-inline-item"><a href="https://kylemcintyre.com/pages/more.html">More</a></li>
+            <li class=" list-inline-item text-muted">|</li>
+          <li class="list-inline-item"><a class="fab fa-github" href="https://github.com/kylejmcintyre" target="_blank"></a></li>
+          <li class="list-inline-item"><a class="fab fa-linkedin" href="https://linkedin.com/in/kylejmcintyre" target="_blank"></a></li>
+      </ul>
+  </div>
+</div>    </div>
+  </header>
+
+  <div class="main">
+    <div class="container">
+      <h1>  Roll the Dice: A fun probability experiment for all ages
+</h1>
+      <hr>
+  <article class="article">
+    <header>
+      <ul class="list-inline">
+        <li class="list-inline-item text-muted" title="2021-04-08T20:17:00-06:00">
+          <i class="fas fa-clock"></i>
+          Thu 08 April 2021
+        </li>
+        <li class="list-inline-item">
+          <i class="fas fa-folder-open"></i>
+          <a href="https://kylemcintyre.com/category/teaching-programming.html">Teaching Programming</a>
+        </li>
+          <li class="list-inline-item">
+            <i class="fas fa-tag"></i>
+              <a href="https://kylemcintyre.com/tag/dice.html">#dice</a>,               <a href="https://kylemcintyre.com/tag/probability.html">#probability</a>,               <a href="https://kylemcintyre.com/tag/python.html">#python</a>          </li>
+      </ul>
+    </header>
+    <div class="content">
+      <p>Last fall I started teaching coding concepts at the local grade school on a volunteer basis. Every month I spend
+roughly 2 hours conducting a workshop for approximately 15 students. We've had a lot of fun and I've enjoyed the challenge
+of coming up with meaningful lessons and projects. The biggest challenge has been that my students range from 3rd graders to 8th graders. 
+This is rural Montana after all. So most of my effort is spent thinking of good workshops rather than coding prep.  </p>
+<p>To kick off each workshop, I like to pose a 'random question of the day' that sets the stage for the workshop. 
+At our last workshop, the random question was as follows: </p>
+<blockquote>
+<p>What number are you most likely to get when you roll two dice and add them together? </p>
+</blockquote>
+<p>This question led me to put together this simple project that even my 1st grader seemed to grok.</p>
+<h3>Roll the Dice</h3>
+<p><em>Prerequisites: the student must know their numbers and be able to perform addition of small numbers</em></p>
+<p><em>Estimated Time: 30 minutes</em></p>
+<h5>1. Find a pair of dice and a piece of paper and pencil (or a chalkboard, or a Google doc...)</h5>
+<h5>2. Ask your student(s) some leading questions</h5>
+<ul>
+<li>What are all of the possible outcomes of rolling two dice and adding them together? <ul>
+<li>Young kids: "What's the biggest number we could get?" "What's the smallest number we could get?" "Can we get every number inbetween?"</li>
+<li><em>(Answer: 2, 3 ... 11, 12)</em></li>
+</ul>
+</li>
+<li>Are all the outcomes equally likely? <ul>
+<li>Young kids: "Will we get 2 as often as we get 9?" "Which number will we get the most or are they all the same?"</li>
+<li><em>(Answer: no, but don't tell them yet)</em></li>
+</ul>
+</li>
+<li>What are some ways we could figure out the answer to the last question? <ul>
+<li>Some older wiz kids might be able to come up with the theoretical proof</li>
+<li>But we're generally trying to push them towards the idea that we could run an experiment</li>
+</ul>
+</li>
+</ul>
+<h5>3. A manual experiment</h5>
+<ul>
+<li>Have the student(s) roll the dice and add them together at least 20 times. Keep tally marks of how many times they roll each possible result. You might get something like this:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>2  - |
+3  - 
+4  - ||
+5  - ||
+6  - ||||
+7  - ||
+8  - |||
+9  - |||
+10 - 
+11 - |||
+12 - 
+</code></pre></div>
+
+
+<p><em>Note: if you do this neatly with good spacing, you'll end up with a poor man's histogram</em></p>
+<ul>
+<li>Ask the student which outcome seems to be most likely based on the experiment</li>
+<li>If one of the outcomes never happens, ask the student if they can assume it will never happen based on their experiment - they'll probably respond no!</li>
+<li>What's wrong with our experiment then? Why can't we trust it's results? <ul>
+<li><em>Answer: we need a much larger sample set, i.e. we didn't roll the dice enough times to really get a good idea of what happens</em></li>
+</ul>
+</li>
+</ul>
+<h5>4. A computer experiment</h5>
+<ul>
+<li>We'd like to roll the dice 10,000 times so that we can feel good about our experiment<ul>
+<li>Ask the student if they're up for it 😂</li>
+</ul>
+</li>
+<li>Instead of doing the physical experiment 10,000 times, we'll have the computer do it for us...</li>
+<li>Visit <a href="https://replit.com/@avoncoders/RollTheDice" target=new>https://replit.com/@avoncoders/RollTheDice</a> to get my code for the experiment and click <code>Fork</code> in the upper right</li>
+<li>You may need to create an account - you can do Google single sign-on</li>
+<li>Once you have your own copy of the code, click the green run button in the top middle</li>
+</ul>
+<p>When you run the code, it will perform the same experiment with 20 rolls, and produce a dubious result like this, similar to the manual experiment:</p>
+<p><img src="images/dice20.png" alt="dice20" width="300"/></p>
+<ul>
+<li>Now, press the grey <code>Stop</code> button in the middle top. Change the value of numberOfRolls to e.g. 100. Press <code>Run</code> again</li>
+<li>Repeat the above step for e.g. 100, 1000, 10000 and see how the results take shape</li>
+</ul>
+<p><img src="images/dice100.png" alt="dice100" width="300"/>
+<img src="images/dice1000.png" alt="dice1000" width="300"/>
+<img src="images/dice10000.png" alt="dice10000" width="300"/></p>
+<h5>5. Conclusions</h5>
+<ul>
+<li>Clearly, not all outcomes are equally likely</li>
+<li>Which number is the most likely? 7<ul>
+<li>Why? Because there are many more ways to get a 7 then there are to get a 12. To roll a twelve, you need two sixes. To roll a seven you could have any combination of (1, 6), (2, 5), (3, 4)</li>
+</ul>
+</li>
+<li>If our experiment doesn't have enough trials/samples, we can't trust the result. If we ran the experiment infinite times, we'd have the exact probability/chances of each outcom</li>
+<li>If your student(s) have played Settlers of Catan, they'll now understand why you move the Robber whenever a 7 is rolled, and why the tiles associated with 6 and 8 are highly coveted</li>
+<li>The computer was able to run an experiment that would've taken us days in less than a second. That is amazing.</li>
+</ul>
+<p>After going through this with my first grader, I asked him "If someone approached you on the playground and offered to pay you a dollar for guessing the sum of two dice they were going to roll, what would you guess?" 
+His answer "I'd definitely go with 7". "Always?". "Always." Proud parenting moment there. </p>
+<h5>Bonus</h5>
+<p>What are the true probabilities of each outcome? The 'theoretical' approach to solving the problem is as follows:</p>
+<ul>
+<li>There is one way to make 2: (1-1)</li>
+<li>There are two ways to make 3: (1-2) and (2-1)</li>
+<li>There are three ways to make 4: (1-3) and (2-2) and (3-1)</li>
+<li>There are four ways to make 5: (1-4) and (2-3) and (3-2) and (4-1)</li>
+<li>There are five ways to make 6: (1-5) and (2-4) and (3-3) and (4-2) and (5-1)</li>
+<li>There are six ways to make 7: (1-6) and (2-5) and (3-4) and (4-3) and (5-2) and (1-6)</li>
+<li>There are five ways to make 8: similar logic to ways to make six</li>
+<li>There are four ways to make 9: similar logic to ways to make five</li>
+<li>There are three ways to make 10: similar logic to ways to make four</li>
+<li>There are two ways to make 11: similar logic to ways to make three</li>
+<li>There is one way to make 12: similar logic to ways to make one</li>
+</ul>
+<p>There are a total of 36 outcomes when you roll two dice. 6 of those outcomes will sum to 7, so 6/36 or 1/6th chance of rolling a seven. The full list of probabilities is as follows:</p>
+<table cellpadding=10>
+  <tr><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th></tr>
+  <tr><td>1/36</td><td>1/18</td><td>1/12</td><td>1/9</td><td>5/36</td><td>1/6</td><td>5/36</td><td>1/9</td><td>1/12</td><td>1/18</td><td>1/36</td></tr>
+</table>
+    </div>
+  </article>
+  <hr>
+  <div id="disqus_thread"></div>
+  <script>
+    var disqus_config = function() {
+      this.page.url = 'https://kylemcintyre.com/roll-the-dice-a-fun-probability-experiment-for-all-ages.html';
+      this.page.identifier = 'roll-the-dice-a-fun-probability-experiment-for-all-ages';
+    };
+    (function() {
+      var d = document;
+      var s = d.createElement('script');
+      s.src = '//kylemcintyre.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', +new Date());
+      (d.head || d.body).appendChild(s);
+    })();
+  </script>
+  <noscript class="text-muted">
+    Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a>
+  </noscript>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+<div class="row">
+  <ul class="col-sm-6 list-inline">
+    <li class="list-inline-item"><a href="https://kylemcintyre.com/archives.html">Archives</a></li>
+    <li class="list-inline-item"><a href="https://kylemcintyre.com/categories.html">Categories</a></li>
+      <li class="list-inline-item"><a href="https://kylemcintyre.com/tags.html">Tags</a></li>
+  </ul>
+  <p class="col-sm-6 text-sm-right text-muted">
+    Generated by <a href="https://github.com/getpelican/pelican" target="_blank">Pelican</a>
+    / <a href="https://github.com/nairobilug/pelican-alchemy" target="_blank">&#x2728;</a>
+  </p>
+</div>    </div>
+  </footer>
+
+</body>
+
+</html>
